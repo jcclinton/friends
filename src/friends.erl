@@ -2,6 +2,7 @@
 
 -export([init/0, cleanup/0]).
 -export([make/2, unmake/2]).
+-export([get_direct_friends/1]).
 
 
 init() ->
@@ -39,6 +40,19 @@ make(Name1, Name2) when is_list(Name1), is_list(Name2) ->
 unmake(Name1, Name2) when is_list(Name1), is_list(Name2) ->
 	remove_friend(Name1, Name2),
 	remove_friend(Name2, Name1).
+	
+
+% get flat list of Name's friends
+get_direct_friends(Name) ->
+	% get tree of friends
+	FriendsTree = get_friends(Name),
+	% convert it to a flat list
+	FriendsList = gb_trees:to_list(FriendsTree),
+	% change it to the format we want
+	% ie from [{Name, Value}] -> [Name]
+	lists:map(fun({FriendName, _}) ->
+		FriendName
+	end, FriendsList).
 
 
 
