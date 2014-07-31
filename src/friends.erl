@@ -2,7 +2,7 @@
 
 -export([init/0, cleanup/0]).
 -export([make/2, unmake/2]).
--export([get_direct_friends/1]).
+-export([get_direct_friends/1, get_indirect_friends/1]).
 
 
 init() ->
@@ -56,6 +56,57 @@ get_direct_friends(Name) ->
 
 
 
+get_indirect_friends(Name) ->
+	DirectFriends = get_direct_friends(Name),
+
+	SecondDirectFriends = lists:foldl(fun(FriendName, Acc) ->
+		Acc ++ get_direct_friends(FriendName)
+	end, [], DirectFriends),
+	SecondDirectFriendsUnique = unique(SecondDirectFriends),
+
+	ExcludeList = [Name|DirectFriends],
+
+	IndirectFriends = lists:foldl(fun(FriendName, Acc) ->
+		get_indirect_friends(FriendName, ExcludeList) ++ Acc
+	end, [], SecondDirectFriendsUnique),
+
+	IndirectUnique = unique(IndirectFriends),
+	lists:filter(fun(FriendName) ->
+		IsExcluded = lists:any(fun(ExcludeName) ->
+			% if this friend is on the excluded list, ignore them
+			ExcludeName == FriendName
+		end, ExcludeList),
+		not IsExcluded
+	end, IndirectUnique).
+
+
+% gets direct friends with an excluded list
+% excluded friends have already been considered
+get_indirect_friends(Name, ExcludeList) ->
+	%get flat direct friend list
+	DirectFriends = get_direct_friends(Name),
+	% filter out any friends on the excluded list
+	UniqueDirectFriends = lists:filter(fun(FriendName) ->
+		IsExcluded = lists:any(fun(ExcludeName) ->
+			% if this friend is on the excluded list, ignore them
+			ExcludeName == FriendName
+		end, ExcludeList),
+		not IsExcluded
+	end, DirectFriends),
+
+	Len = length(UniqueDirectFriends),
+	% if no direct friends left to check, just return current name
+	if Len == 0 -> [Name];
+		Len > 0 ->
+			% add these unique friends to the next exclude list
+			NewExcludeList = [Name|UniqueDirectFriends] ++ ExcludeList,
+			% recurse through all unique friends
+			lists:foldl(fun(FriendName, Acc) ->
+				get_indirect_friends(FriendName, NewExcludeList) ++ Acc
+			end, [Name], UniqueDirectFriends)
+	end.
+
+
 
 
 
@@ -66,6 +117,20 @@ get_direct_friends(Name) ->
 
 %%%%%%%%%%%%%%%%%
 %% private
+
+unique(Friends) ->
+	unique(Friends, []).
+
+unique([], Acc) -> Acc;
+unique([FriendName|Friends], Acc) ->
+	IsInAcc = lists:any(fun(AccName) ->
+		AccName == FriendName
+	end, Acc),
+
+	NewAcc = if IsInAcc -> Acc;
+		not IsInAcc -> [FriendName|Acc]
+	end,
+	unique(Friends, NewAcc).
 
 
 % remove name2 from name1's friend list
