@@ -8,8 +8,8 @@
 %%% TESTS DESCRIPTIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-initial_strand_test_() ->
-	[{"",
+friends_test_() ->
+	[{"make friends",
 	 {setup, fun init/0, fun stop/1, fun make_friends/1}}
 	].
 
@@ -50,4 +50,6 @@ make_friends({PeopleList, Person}) ->
 	end, PeopleList),
 
 	DirectFriendList = friends:get_direct_friends(Person),
+	% test that these two friends are on this list
+	% sort them just to ensure lists will be in the same order
 	[?_assertEqual( lists:sort(DirectFriendList), lists:sort(["Bella", "Elizabeth"]))].
