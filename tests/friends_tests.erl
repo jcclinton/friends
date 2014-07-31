@@ -8,9 +8,14 @@
 %%% TESTS DESCRIPTIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-friends_test_() ->
+make_friends_test_() ->
 	[{"make friends",
-	 {setup, fun init/0, fun stop/1, fun make_friends/1}}
+	 {setup, fun init1/0, fun stop/1, fun make_friends1/1}}
+	].
+
+unmake_friends_test_() ->
+	[{"unmake friends",
+	 {setup, fun init_unmake1/0, fun stop/1, fun unmake_friends1/1}}
 	].
 
 
@@ -21,7 +26,19 @@ friends_test_() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-init() ->
+init1() ->
+	friends:init(),
+	% friends to check
+	Aaron = {"Aaron", ["Bella"]},
+	Bella = {"Bella", ["David", "Cindy"]},
+	David = {"David", ["Elizabeth"]},
+	Cindy = {"Cindy", ["Frank"]},
+
+	% list of people and who they should make friends with
+	{[Aaron, Bella, David, Cindy], "David"}.
+
+
+init_unmake1() ->
 	friends:init(),
 	% friends to check
 	Aaron = {"Aaron", ["Bella"]},
@@ -42,14 +59,29 @@ stop(_SetupData) ->
 %%% Actual Tests %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-make_friends({PeopleList, Person}) ->
-	lists:foreach(fun({Name, Friends}) ->
-		lists:foreach(fun(Friend) ->
-			friends:make(Name, Friend)
-		end, Friends)
-	end, PeopleList),
+make_friends1({PeopleList, Person}) ->
+	make_all_friends(PeopleList),
 
 	DirectFriendList = friends:get_direct_friends(Person),
 	% test that these two friends are on this list
 	% sort them just to ensure lists will be in the same order
 	[?_assertEqual( lists:sort(DirectFriendList), lists:sort(["Bella", "Elizabeth"]))].
+
+unmake_friends1({PeopleList, Person}) ->
+	make_all_friends(PeopleList),
+
+	friends:unmake(Person, "Bella"),
+	DirectFriendList = friends:get_direct_friends(Person),
+	% test that these two friends are on this list
+	% sort them just to ensure lists will be in the same order
+	[?_assertEqual( lists:sort(DirectFriendList), lists:sort(["Elizabeth"]))].
+
+
+
+%%%% helpers
+make_all_friends(PeopleList) ->
+	lists:foreach(fun({Name, Friends}) ->
+		lists:foreach(fun(Friend) ->
+			friends:make(Name, Friend)
+		end, Friends)
+	end, PeopleList).
